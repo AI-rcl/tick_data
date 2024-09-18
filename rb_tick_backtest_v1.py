@@ -25,8 +25,8 @@ def backtest(args,is_fitting = True):
 
     data = args[0]
     result = args[1]
-    l_coef = args[2]
-    s_coef = args[3]
+    l_benifit = args[2]
+    s_benifit = args[3]
 
     pos = 0
     long_diff = []
@@ -50,28 +50,31 @@ def backtest(args,is_fitting = True):
     detail['direction'] = []
     detail['offset'] = []
     detail['diff'] = []
-
+    detail['total_changed'] = []
+    detail['is_changed'] = []
+ 
 
     for row in tqdm(data.iterrows()):
-        changed_sign = False
+        changed_sign = 0
         sign = row[1]['sign']   
         atr = row[1]['atr']
-        if atr <= 0.5:
-            atr = 0.5
-        elif atr >= 3:
-            atr = 3
-        
-        l_benifit = 7 + atr*(l_coef)
-        s_benifit = 5 + atr*(s_coef)
         
         # if row[0].time() != END_0 and row[0].time() != END_1:
         tick_date =  datetime.fromtimestamp(row[1]['datetime'].timestamp()) - timedelta(hours=8)
         tick_time = tick_date.time()
         if tick_time != time(20,59) and tick_time != time(8,59):
             if pos == 0:
-                if len(total_diff)>=1:
+                if len(total_diff)>=3:
                     if total_diff[-1]>=40 and direction[-1] == sign:
                         sign *= -1
+                    elif total_diff[-1]<=-10 and sum(changed[-3:])<18 and sum(changed[-3:])>-10:
+                        if sign == 1:
+                            sign *= -1
+                            changed_sign = 1
+                    elif sum(changed[-3:])<=50 and sum(changed[-3:]) >= 30:
+                        if sign == -1:
+                            sign *= -1
+                            changed_sign = 1
                 if sign == 1:
     
                     pos = 1
@@ -90,6 +93,8 @@ def backtest(args,is_fitting = True):
                         detail['direction'].append(1)
                         detail['offset'].append('open')
                         detail['diff'].append(0)
+                        detail['total_changed'].append(sum(changed[-3:]))
+                        detail['is_changed'].append(changed_sign)
                     if changed_sign:
                         print(row[1]['date'])
                 elif sign == -1:
@@ -108,6 +113,8 @@ def backtest(args,is_fitting = True):
                         detail['direction'].append(-1)
                         detail['offset'].append('open')
                         detail['diff'].append(0)
+                        detail['total_changed'].append(sum(changed[-3:]))
+                        detail['is_changed'].append(changed_sign)
                     if changed_sign:
                         print(row[1]['date'])
                 continue
@@ -139,6 +146,8 @@ def backtest(args,is_fitting = True):
                         detail['direction'].append(-1)
                         detail['offset'].append('close')
                         detail['diff'].append(diff_0)
+                        detail['total_changed'].append(0)
+                        detail['is_changed'].append(0)
                 continue
 
             elif pos == -1:
@@ -167,12 +176,14 @@ def backtest(args,is_fitting = True):
                         detail['direction'].append(1)
                         detail['offset'].append('close')
                         detail['diff'].append(diff_0)
+                        detail['total_changed'].append(0)
+                        detail['is_changed'].append(0)
                 continue
 
     if is_fitting == True:
         res = {"long_diff":sum(long_diff),"long_trades":len(long_diff),
                 "short_diff":sum(short_diff),"short_trades":len(short_diff)}
-        result.append({f"{l_coef}_{s_coef}":res})
+        result.append({f"{l_benifit}_{s_benifit}":res})
     else:
         base_name = os.path.basename(__file__).split('.')[0]
         file_name = RES_PATH + base_name +f'-backtest_result.csv'
@@ -281,7 +292,7 @@ def get_data(path,start=20000,end=50000,period=1):
     data['min_diff'] = data['last_price'] - data['max']
 
     h1 = data[(data['last_price']<=data['bid_price'])&(data['bid_volume']>=4*data['ask_volume'])&(data['slope']>=0.3)].index
-    l1 =  data[(data['ask_volume']>5*data['bid_volume'])&(data['slope']<= -0.3)].index
+    l1 =  data[(data['ask_volume']>5*data['bid_volume'])&(data['slope']<= -0.3)&(data['grad']>0)].index
     data['sign']=0
     data.loc[h1,'sign'] = 1
     data.loc[l1,'sign'] = -1
@@ -299,8 +310,8 @@ if __name__ == "__main__":
     end = 1100000
     data = get_data(input_path,start=start,end=end,period=10)
     config = {
-        "l_benifit":[3,10,1],
-        "s_benifit":[3,10,1]
+        "l_benifit":[12,30,2],
+        "s_benifit":[12,30,2]
     }
 
     if is_fitting:
@@ -310,5 +321,3 @@ if __name__ == "__main__":
         result = {}
         args = (data,result,param[0],param[1])
         backtest(args=args,is_fitting=is_fitting )
-
-#4_7
