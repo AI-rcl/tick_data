@@ -32,12 +32,24 @@ def is_trading(trade_time):
         return False
     return True
 
+def standart(x):
+    if x >= 2.5:
+        return 2.5
+    elif x>= 0 and x <= 0.5:
+        return 0.5
+    elif x<0 and x >= -0.5:
+        return -0.5
+    elif x <= -2.5:
+        return -2.5
+    else:
+        return x
+
 def backtest(args,is_fitting = True):
 
     data = args[0]
     result = args[1]
-    l_benifit = args[2]
-    s_benifit = args[3]
+    l_coef = args[2]
+    s_coef = args[3]
 
     pos = 0
     long_diff = []
@@ -53,28 +65,39 @@ def backtest(args,is_fitting = True):
     detail['date'] = []
     detail['slope'] = []
     detail['grad'] = []
+    detail['atr'] = []
     detail['min_diff'] = []
     detail['max_diff'] = []
     detail['pos_price'] = []
     detail['direction'] = []
     detail['offset'] = []
     detail['diff'] = []
+    detail['total_changed'] = []
+    detail['is_changed'] = []
+ 
 
 
     for row in tqdm(data.iterrows()):
-        changed_sign = False
-        sign = row[1]['sign']   
+        changed_sign = 0
+        sign = row[1]['sign']
+        slope = row[1]['slope']
+
+        l_benifit = l_coef
+        s_benifit = s_coef
         
         # if row[0].time() != END_0 and row[0].time() != END_1:
-        tick_date =  datetime.fromtimestamp(row[1]['datatime'].timestamp()) - timedelta(hours=8)
+        tick_date =  datetime.fromtimestamp(row[1]['datetime'].timestamp()) - timedelta(hours=8)
         tick_time = tick_date.time()
         if is_trading(tick_time) == True:
             if pos == 0:
 
-               
-                #     elif sum(total_diff[-2:]) < -32:
-                #         sign *= -1
-                #         changed_sign = True
+                if sum(changed[-5:]) < -120 and sign == -1:
+                    sign *= -1
+                    changed_sign = 1
+                elif sum(changed[-5:]) <= -5 and sum(changed[-5:])>=-25:
+                    if len(total_diff) >= 1:
+                        if total_diff[-1] <0 and sign == -1:
+                            sign *= -1
         
                 if sign == 1:
                     pos = 1
@@ -86,11 +109,15 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
+                        detail['atr'].append(row[1]['atr'])
                         detail['max_diff'].append(row[1]['max_diff'])
                         detail['min_diff'].append(row[1]['min_diff'])
                         detail['direction'].append(1)
                         detail['offset'].append('open')
                         detail['diff'].append(0)
+                        detail['total_changed'].append(sum(changed[-5:]))
+                        detail['is_changed'].append(changed_sign)
+
                     if changed_sign:
                         print(row[1]['date'])
                 elif sign == -1:
@@ -103,12 +130,15 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-
+                        detail['atr'].append(row[1]['atr'])
                         detail['max_diff'].append(row[1]['max_diff'])
                         detail['min_diff'].append(row[1]['min_diff'])
                         detail['direction'].append(-1)
                         detail['offset'].append('open')
                         detail['diff'].append(0)
+                        detail['total_changed'].append(sum(changed[-5:]))
+                        detail['is_changed'].append(changed_sign)
+
                     if changed_sign:
                         print(row[1]['date'])
                 continue
@@ -134,11 +164,14 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['bid_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
+                        detail['atr'].append(row[1]['atr'])
                         detail['max_diff'].append(row[1]['max_diff'])
                         detail['min_diff'].append(row[1]['min_diff'])
                         detail['direction'].append(-1)
                         detail['offset'].append('close')
                         detail['diff'].append(diff_0)
+                        detail['total_changed'].append(0)
+                        detail['is_changed'].append(0)
                 continue
 
             elif pos == -1:
@@ -161,11 +194,14 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['ask_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
+                        detail['atr'].append(row[1]['atr'])
                         detail['max_diff'].append(row[1]['max_diff'])
                         detail['min_diff'].append(row[1]['min_diff'])
                         detail['direction'].append(1)
                         detail['offset'].append('close')
                         detail['diff'].append(diff_0)
+                        detail['total_changed'].append(0)
+                        detail['is_changed'].append(0)
                 continue
 
     if is_fitting == True:
@@ -275,7 +311,7 @@ def get_diff(x):
 #下单逻辑在这里改
 def get_data(path,start=20000,end=50000,period=1):
     data = pd.read_csv(path)
-    data['datatime'] = pd.to_datetime(data['datatime'])
+    data['datetime'] = pd.to_datetime(data['datetime'])
     data['max_diff'] = data['last_price'] - data['min']
     data['min_diff'] = data['last_price'] - data['max']
 
@@ -293,9 +329,9 @@ if __name__ == "__main__":
         参数顺序data,result,benifit,loss
     """
     is_fitting = False
-    input_path = "D:/Code/jupyter_project/data_analysis/bar_analysis/bar_backtest/eg数据分析/eg2405_tick_new.csv"
+    input_path = os.path.dirname(__file__)+'/rb2405_new_tick.csv'
     start = 0
-    end = 1100000
+    end = 1200000
     data = get_data(input_path,start=start,end=end,period=10)
     config = {
         "l_benifit":[8,24,2],
