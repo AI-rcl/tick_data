@@ -68,15 +68,17 @@ def backtest(args,is_fitting = True):
                     if sign == 1:
                         sign *= -1
                         changed_sign =1
-                elif len(total_diff)>=1 and total_diff[-1]>=40:
+                elif len(total_diff)>=1 and total_diff[-1]>=30:
                     if direction[-1] == sign:
                         sign *= -1
-                elif row[1]['max_diff'] >=18 and row[1]['min_diff']>=0:
-                    if sign == 1:
-                        sign *= -1
- 
+                        changed_sign = 1
+
+                elif row[1]['max_diff'] >=18 and row[1]['min_diff']>=0 :
+                    # if sign == 1:
+                    sign *= -1
+                    changed_sign = 1
+
                 if sign == 1:
-    
                     pos = 1
                     pos_price = row[1]['ask_price']
                     max_price = pos_price
@@ -321,5 +323,3 @@ if __name__ == "__main__":
         result = {}
         args = (data,result,param[0],param[1])
         backtest(args=args,is_fitting=is_fitting )
-
-#19_19
