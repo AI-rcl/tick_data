@@ -315,3 +315,5 @@ if __name__ == "__main__":
         result = {}
         args = (data,result,param[0],param[1])
         backtest(args=args,is_fitting=is_fitting )
+
+#26_14
