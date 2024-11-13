@@ -11,6 +11,7 @@ from datetime import datetime,timedelta
 from multiprocessing import Pool,cpu_count
 import multiprocessing
 
+
 BASE_DIR = os.path.dirname(__file__)
 FILE_NAME = os.path.basename(__file__).split('.')[0]
 RES_PATH = BASE_DIR+f'/result/{FILE_NAME}/'
