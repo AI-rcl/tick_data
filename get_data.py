@@ -19,6 +19,7 @@ B_END= T_END + timedelta(days=2)
 def get_new_date(x):
     x = datetime.fromtimestamp(x.timestamp()) - timedelta(hours = 8)
     x = x.replace(second=0)
+    x = x.replace(microsecond=0)
     return x
 
 def get_tick_data(tick_path,start = T_START, end = T_END):
