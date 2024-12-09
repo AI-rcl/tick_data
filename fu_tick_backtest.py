@@ -23,10 +23,10 @@ END_1 = time(23,0)
 
 def is_trading(trade_time):
     start_1 = time(9,0)
-    end_1 = time(14,40)
+    end_1 = time(14,50)
 
     start_2 = time(21,0)
-    end_2 = time(22,40)
+    end_2 = time(22,50)
     if trade_time >= start_1 and trade_time <= end_1:
         return True
     elif trade_time >= start_2 and trade_time <= end_2:
@@ -55,8 +55,8 @@ def backtest(args,is_fitting = True):
     detail['slope'] = []
     detail['grad'] = []
 
-    detail['max_price'] = []
-    detail['min_price'] = []
+    detail['max_diff'] = []
+    detail['min_diff'] = []
     detail['pos_price'] = []
     detail['atr'] = []
     detail['direction'] = []
@@ -74,14 +74,29 @@ def backtest(args,is_fitting = True):
         # if row[0].time() != END_0 and row[0].time() != END_1:
         tick_date =  datetime.fromtimestamp(row[1]['datetime'].timestamp()) - timedelta(hours=8)
         tick_time = tick_date.time()
-        if True:
+        if is_trading(tick_time) == True:
             if pos == 0:
                 
-                if row[1]['grad'] >= 2.5:
-                    if sum(changed[-3:]) - sum(changed[-4:-1]) <=-10 and sign == 1:
-                        sign *= 0
-                        changed_sign =1
-
+                if len(total_diff) >= 1:
+                    if total_diff[-1] >=30:
+                        sign *= -1
+                        changed_sign = 1
+                    if sum(changed[-3:]) >100 and sum(changed[-3:]) - sum(changed[-4:-1]) < 0:
+                        if sign == 1:
+                            sign *= -1
+                            changed_sign = 2
+                    elif row[1]['grad'] >10:
+                        if sign == 1:
+                            sign *= -1
+                            changed_sign =3
+                    # elif  row[1]['max_diff'] - detail['max_diff'][-1] <0 and row[1]['min_diff'] - detail['min_diff'][-1] <0:     
+                    #     if sum(changed[-3:]) - sum(changed[-4:-1]) < 0 and sign == 1 and row[1]['min_diff']>=-15:
+                    #         sign *= -1
+                    #         changed_sign = 4
+                    elif row[1]['slope'] >=3 and row[1]['max_diff'] >= 35 and row[1]['min_diff']>=0 :
+                        if sign == 1:
+                            sign *= -1
+                            changed_sign = 5
                 if sign == 1:
                     pos = 1
                     pos_price = row[1]['ask_price']
@@ -93,8 +108,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(1)
                         detail['offset'].append('open')
@@ -113,8 +128,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(-1)
                         detail['offset'].append('open')
@@ -146,8 +161,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['bid_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(-1)
                         detail['offset'].append('close')
@@ -176,8 +191,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['ask_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(1)
                         detail['offset'].append('close')
@@ -185,70 +200,70 @@ def backtest(args,is_fitting = True):
                         detail['total_changed'].append(0)
                         detail['is_changed'].append(0)
                 continue
-        # else:
-        #     if tick_time != time(8,59) and tick_time != time(20,59):
-        #         if pos == 1:
-        #             # 用high和low计算收盘
-        #             max_price = max(max_price, row[1]['last_price'])
-        #             min_price = min(min_price,row[1]['last_price'])
-        #             #close_drop 为下单后的历史高价与当前收盘价的差值
-        #             close_drop = max_price - row[1]['bid_price']
+        else:
+            if tick_time != time(8,59) and tick_time != time(20,59):
+                if pos == 1:
+                    # 用high和low计算收盘
+                    max_price = max(max_price, row[1]['last_price'])
+                    min_price = min(min_price,row[1]['last_price'])
+                    #close_drop 为下单后的历史高价与当前收盘价的差值
+                    close_drop = max_price - row[1]['bid_price']
 
-        #             diff_0 = row[1]['bid_price'] - pos_price
+                    diff_0 = row[1]['bid_price'] - pos_price
                     
-        #             # if close_drop >= l_benifit:
-        #             if diff_0 <= -5:
-        #                 long_diff.append(diff_0)
-        #                 pos = 0
-        #                 total_diff.append(diff_0)
-        #                 direction.append(1)
-        #                 changed.append(diff_0)
+                    # if close_drop >= l_benifit:
+                    if diff_0 <= -5:
+                        long_diff.append(diff_0)
+                        pos = 0
+                        total_diff.append(diff_0)
+                        direction.append(1)
+                        changed.append(diff_0)
 
-        #                 if not is_fitting:
-        #                     detail['date'].append(row[1]['date'])
-        #                     detail['pos_price'].append(row[1]['bid_price'])
-        #                     detail['slope'].append(row[1]['slope'])
-        #                     detail['grad'].append(row[1]['grad'])
-        #                     detail['max_price'].append(row[1]['max_diff'])
-        #                     detail['min_price'].append(row[1]['min_diff'])
-        #                     detail['atr'].append(row[1]['atr'])
-        #                     detail['direction'].append(-1)
-        #                     detail['offset'].append('close')
-        #                     detail['diff'].append(diff_0)
-        #                     detail['total_changed'].append(0)
-        #                     detail['is_changed'].append(0)
-        #             continue
+                        if not is_fitting:
+                            detail['date'].append(row[1]['date'])
+                            detail['pos_price'].append(row[1]['bid_price'])
+                            detail['slope'].append(row[1]['slope'])
+                            detail['grad'].append(row[1]['grad'])
+                            detail['max_diff'].append(row[1]['max_diff'])
+                            detail['min_diff'].append(row[1]['min_diff'])
+                            detail['atr'].append(row[1]['atr'])
+                            detail['direction'].append(-1)
+                            detail['offset'].append('close')
+                            detail['diff'].append(diff_0)
+                            detail['total_changed'].append(0)
+                            detail['is_changed'].append(0)
+                    continue
                 
-        #         elif pos == -1:
-        #             # 用high和low计算收盘
-        #             max_price = max(max_price, row[1]['last_price'])
-        #             min_price = min(min_price,row[1]['last_price'])
-        #             close_drop = row[1]['ask_price'] - min_price
+                elif pos == -1:
+                    # 用high和low计算收盘
+                    max_price = max(max_price, row[1]['last_price'])
+                    min_price = min(min_price,row[1]['last_price'])
+                    close_drop = row[1]['ask_price'] - min_price
                 
-        #             diff_0 =  pos_price - row[1]['ask_price']
+                    diff_0 =  pos_price - row[1]['ask_price']
 
-        #             # if close_drop >= s_benifit:
-        #             if diff_0 <= -5:
-        #                 short_diff.append(diff_0)
-        #                 pos = 0
-        #                 total_diff.append(diff_0)
-        #                 direction.append(-1)
-        #                 changed.append(-1*diff_0)
+                    # if close_drop >= s_benifit:
+                    if diff_0 <= -5:
+                        short_diff.append(diff_0)
+                        pos = 0
+                        total_diff.append(diff_0)
+                        direction.append(-1)
+                        changed.append(-1*diff_0)
 
-        #                 if not is_fitting:
-        #                     detail['date'].append(row[1]['date'])
-        #                     detail['pos_price'].append(row[1]['ask_price'])
-        #                     detail['slope'].append(row[1]['slope'])
-        #                     detail['grad'].append(row[1]['grad'])
-        #                     detail['max_price'].append(row[1]['max_diff'])
-        #                     detail['min_price'].append(row[1]['min_diff'])
-        #                     detail['atr'].append(row[1]['atr'])
-        #                     detail['direction'].append(1)
-        #                     detail['offset'].append('close')
-        #                     detail['diff'].append(diff_0)
-        #                     detail['total_changed'].append(0)
-        #                     detail['is_changed'].append(0)
-        #             continue
+                        if not is_fitting:
+                            detail['date'].append(row[1]['date'])
+                            detail['pos_price'].append(row[1]['ask_price'])
+                            detail['slope'].append(row[1]['slope'])
+                            detail['grad'].append(row[1]['grad'])
+                            detail['max_diff'].append(row[1]['max_diff'])
+                            detail['min_diff'].append(row[1]['min_diff'])
+                            detail['atr'].append(row[1]['atr'])
+                            detail['direction'].append(1)
+                            detail['offset'].append('close')
+                            detail['diff'].append(diff_0)
+                            detail['total_changed'].append(0)
+                            detail['is_changed'].append(0)
+                    continue
 
     if is_fitting == True:
         res = {"long_diff":sum(long_diff),"long_trades":len(long_diff),
@@ -376,8 +391,8 @@ if __name__ == "__main__":
     """
     is_fitting = False
     input_path = os.path.dirname(__file__)+'/fu2405_new_tick.csv'
-    start = 700000
-    end = 900000
+    start = 0
+    end = 1100000
     data = get_data(input_path,start=start,end=end,period=10)
     config = {
         "l_benifit":[12,30,2],
@@ -391,6 +406,7 @@ if __name__ == "__main__":
         result = {}
         args = (data,result,param[0],param[1])
         backtest(args=args,is_fitting=is_fitting )
+
 
 #l_benifit_s_benifit
 #22_12
