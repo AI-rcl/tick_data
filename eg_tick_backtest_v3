@@ -78,8 +78,8 @@ def backtest(args,is_fitting = True):
         if is_trading(tick_time) == True:
             if pos == 0:
                 if len(detail['pos_price']) >= 1:
-                    max_diff_1 = row[1]['last_price'] - min(detail['pos_price'][-20:])
-                    min_diff_1 = row[1]['last_price'] - max(detail['pos_price'][-20:])
+                    max_diff_1 = row[1]['ask_price'] - min(detail['pos_price'][-19:])
+                    min_diff_1 = row[1]['bid_price'] - max(detail['pos_price'][-19:])
                     max_diff_2 = detail['pos_price'][-1] - min(detail['pos_price'][-20:])
                     min_diff_2 = detail['pos_price'][-1] - max(detail['pos_price'][-20:])
                     if max_diff_1 <=30 and min_diff_1 >= 0:
