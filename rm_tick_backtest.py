@@ -43,8 +43,8 @@ def backtest(args,is_fitting = True):
     detail['slope'] = []
     detail['grad'] = []
 
-    detail['max_price'] = []
-    detail['min_price'] = []
+    detail['max_diff'] = []
+    detail['min_diff'] = []
     detail['pos_price'] = []
     detail['atr'] = []
     detail['direction'] = []
@@ -65,10 +65,29 @@ def backtest(args,is_fitting = True):
         if tick_time != time(20,59) and tick_time != time(8,59):
             if pos == 0:
                 
-                if sum(changed[-3:]) <=20 and row[1]['slope']<-2.5:
-                    if sign == -1:
+                if len(detail['pos_price']) >= 1:
+                    max_diff_1 = row[1]['ask_price'] - min(detail['pos_price'][-14:])
+                    min_diff_1 = row[1]['bid_price'] - max(detail['pos_price'][-14:])
+                    max_diff_2 = detail['pos_price'][-1] - min(detail['pos_price'][-15:])
+                    min_diff_2 = detail['pos_price'][-1] - max(detail['pos_price'][-15:])
+                    # if max_diff_1 > 2 and max_diff_1 <=15 and min_diff_1 >= -40:
+                    #     if sign == -1:
+                    #         sign *= -1
+                    #         changed_sign =1
+                    
+                    if row[1]['grad']>=3 and row[1]['slope']<=-2 and row[1]['slope']>=-7:
+                        if sign == -1:
+                            sign *= -1
+                            changed_sign =1
+                    
+                    elif min_diff_1 <= -180:
+                        if sign == -1:
+                            sign *= -1
+                            changed_sign =2
+                    
+                    elif max_diff_1 >= 30 and max_diff_1 <= 60 and min_diff_1 >= -30 and min_diff_1 <= -5:
                         sign *= -1
-                        changed_sign = 1
+                        changed_sign =3
              
                 if sign == 1:
                     pos = 1
@@ -81,8 +100,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(1)
                         detail['offset'].append('open')
@@ -101,8 +120,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(pos_price)
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(-1)
                         detail['offset'].append('open')
@@ -134,8 +153,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['bid_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(-1)
                         detail['offset'].append('close')
@@ -164,8 +183,8 @@ def backtest(args,is_fitting = True):
                         detail['pos_price'].append(row[1]['ask_price'])
                         detail['slope'].append(row[1]['slope'])
                         detail['grad'].append(row[1]['grad'])
-                        detail['max_price'].append(row[1]['max_diff'])
-                        detail['min_price'].append(row[1]['min_diff'])
+                        detail['max_diff'].append(row[1]['max_diff'])
+                        detail['min_diff'].append(row[1]['min_diff'])
                         detail['atr'].append(row[1]['atr'])
                         detail['direction'].append(1)
                         detail['offset'].append('close')
@@ -187,6 +206,8 @@ def backtest(args,is_fitting = True):
 
         detail_name = RES_PATH + base_name +f'-backtest_detail.csv'
         detail_pd = pd.DataFrame(detail)
+        detail_pd['max_diff'] = detail_pd['pos_price'] - detail_pd['pos_price'].rolling(15,min_periods=5).min()
+        detail_pd['min_diff'] = detail_pd['pos_price'] - detail_pd['pos_price'].rolling(15,min_periods=5).max()
         detail_pd.to_csv(detail_name,index=None)
 
         print("long_diff",sum(long_diff),"long_trades",len(long_diff))
@@ -309,11 +330,26 @@ if __name__ == "__main__":
     }
 
     if is_fitting:
-        multi_backtest(input_path,data,worker_num=4,**config)
+        multi_backtest(input_path,data,worker_num=8,**config)
     else:
         param = read_best_parm()
         result = {}
         args = (data,result,param[0],param[1])
         backtest(args=args,is_fitting=is_fitting )
 
-#24_26
+#l_benifit_s_benifit
+24_26
+
+#计算指标在这里
+def get_param(data):
+    data['sma'] = ta.SMA(data['close'],5)
+    data['slope'] = ta.LINEARREG_SLOPE(data['close'],3)
+    data['max'] = data['high'].rolling(60).max()
+    data['min'] = data['low'].rolling(60).min()
+    # data['g'] = np.gradient(data['close'])
+    data['grad'] = data['slope'].diff()
+    data['atr'] = ta.ATR(data['high'],data['low'],data['close'],14)
+    return data
+
+
+
