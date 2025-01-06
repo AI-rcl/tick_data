@@ -81,7 +81,7 @@ def backtest(args,is_fitting = True):
                             changed_sign =1
 
                     elif sum(changed[-3:]) - sum(changed[-4:-1]) <= -5 and sum(changed[-3:]) >= -40:
-                        if min_diff_1 <= -10 and min_diff_1 <= -40:
+                        if  min_diff_1 <= -40:
                             if sign == 1:
                                 sign *= -1
                                 changed_sign =2
