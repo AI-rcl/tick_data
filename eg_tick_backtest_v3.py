@@ -93,7 +93,7 @@ def backtest(args,is_fitting = True):
                     elif min_diff_1 <= -40 and max_diff_1 >2 and max_diff_1 < 10:
                         if sign == -1:
                             sign*=-1
-                            changed_sign = 3
+                            changed_sign = 3 
                     elif min_diff_1 <= -140:
                         if sign == -1:
                             sign *= -1
